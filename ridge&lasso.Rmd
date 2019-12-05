@@ -1,0 +1,187 @@
+---
+title: "Untitled"
+author: "Jueyan Lin"
+date: "November 16, 2018"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(glmnet)
+library(readxl)
+library(earth)
+```
+
+```{r}
+store2 = read_excel("D:\\OLIN\\COURSE\\MKT500S\\Group\\Store9-1.xlsx")
+```
+
+```{r}
+##ridge
+ifTrain = store2["Random"]=="Train"
+rmse_list = c()
+for (i in 1:24) {
+  traindata = store2[ifTrain,c(3:98,98+i)]
+  # make Yi be Y (e.g. column Y1 is now named Y)
+  colnames(traindata) = c(colnames(traindata)[1:96],"Y")
+  
+  # test data without Y to be used for prediction
+  testdata = store2[!ifTrain,3:98]
+  # Y of test data
+  test_y = store2[!ifTrain,98+i]
+  
+  ## paste your model and prediction ##
+  x_train = as.matrix(traindata)
+  x_test = as.matrix(testdata)
+  test_y = as.matrix(test_y)
+  
+  ridge_mod = glmnet(x_train[,1:96],traindata$Y,alpha = 0)
+  cv.out_r=cv.glmnet(x_train[,1:96],traindata$Y,alpha = 0)
+  plot(cv.out_r)
+  bestlam_r=cv.out_r$lambda.min
+  ridge_pred=predict(ridge_mod,s=bestlam_r,x_test)
+  rmse =sqrt(mean((ridge_pred-test_y)^2))
+  
+  # print your rmse for each loop
+  print(rmse)
+  # store each rmse in a list
+  rmse_list[i] = rmse
+}
+# calculate average rmse
+avg_rmse = mean(rmse_list)
+avg_rmse
+```
+
+```{r}
+store=list()
+for (i in 2:9) {
+  store[[i]] = read_excel(paste0("Store",i,"-1.xlsx"))
+}
+
+```
+
+```{r}
+rmse_matrix = c()
+avg_rmse = c()
+for (s in 2:9) {
+  ifTrain = store[[s]]["Random"]=="Train"
+  rmse_list = c()
+  for (i in 1:24) {
+    
+    traindata = store[[s]][ifTrain,c(3:98,98+i)]
+    for (j in 1:96){
+      if (j %% 4==0){
+        traindata[,j]=log(traindata[,j])
+        }
+    }
+    traindata[,97]=log(traindata[,97])
+    # make Yi be Y (e.g. column Y1 is now named Y)
+    colnames(traindata) = c(colnames(traindata)[1:96],"Y")
+    # test data without Y to be used for prediction
+    testdata = store[[s]][!ifTrain,3:98]
+    for (j in 1:96){
+      if (j %% 4==0){
+        testdata[,j]=log(testdata[,j])
+      }
+    }
+    # Y of test data
+    test_y = as.matrix(store[[s]][!ifTrain,98+i])
+    x_train = as.matrix(traindata)
+    x_test = as.matrix(testdata)
+    
+    ridge_mod = glmnet(x_train[,1:96],traindata$Y,alpha = 0)
+    cv.out_r=cv.glmnet(x_train[,1:96],traindata$Y,alpha = 0)
+    plot(cv.out_r)
+    bestlam_r=cv.out_r$lambda.min
+    ridge_pred=predict(ridge_mod,s=bestlam_r,x_test)
+    
+    pred_o = exp(ridge_pred)
+    #test_yo = as.matrix(store[[s]][!ifTrain,98+i])
+    rmse =sqrt(mean((pred_o-test_y)^2))
+    print(rmse)
+    # store each rmse in a list
+    rmse_list[i] = rmse
+  }
+  # store each store rmse into a matrix
+  rmse_matrix = cbind(rmse_matrix,rmse_list)
+
+  #print(mean(rmse_list))
+  avg_rmse[s-1] = mean(rmse_list)
+}
+print(avg_rmse)
+# write the rmse of each item in each store into a csv file
+write.csv(rmse_matrix,file = "store_ridge.csv")
+```
+
+```{r}
+##lasso
+ifTrain = store2["Random"]=="Train"
+rmse_list = c()
+for (i in 1:24) {
+  traindata = store2[ifTrain,c(3:98,98+i)]
+  # make Yi be Y (e.g. column Y1 is now named Y)
+  colnames(traindata) = c(colnames(traindata)[1:96],"Y")
+  
+  # test data without Y to be used for prediction
+  testdata = store2[!ifTrain,3:98]
+  # Y of test data
+  test_y = store2[!ifTrain,98+i]
+  
+  ## paste your model and prediction ##
+  x_train = as.matrix(traindata)
+  x_test = as.matrix(testdata)
+  test_y = as.matrix(test_y)
+  
+  ridge_mod = glmnet(x_train[,1:96],traindata$Y,alpha = 0)
+  cv.out_r=cv.glmnet(x_train[,1:96],traindata$Y,alpha = 0)
+  plot(cv.out_r)
+  bestlam_r=cv.out_r$lambda.min
+  ridge_pred=predict(ridge_mod,s=bestlam_r,x_test)
+  rmse =sqrt(mean((ridge_pred-test_y)^2))
+  
+  
+    
+  # print your rmse for each loop
+  print(rmse)
+  # store each rmse in a list
+  rmse_list[i] = rmse
+}
+# calculate average rmse
+avg_rmse = mean(rmse_list)
+avg_rmse
+```
+
+```{r}
+##MARS
+ifTrain = store2["Random"]=="Train"
+rmse_list = c()
+for (i in 1:24) {
+  traindata = store2[ifTrain,c(3:98,98+i)]
+  # make Yi be Y (e.g. column Y1 is now named Y)
+  colnames(traindata) = c(colnames(traindata)[1:96],"Y")
+  
+  # test data without Y to be used for prediction
+  testdata = store2[!ifTrain,3:98]
+  # Y of test data
+  test_y = as.matrix(store2[!ifTrain,98+i])
+  
+  ## paste your model and prediction ##
+  
+  fit.model = earth(traindata[,1:96],traindata$Y,degree = 1)
+  pred_model = predict(fit.model,testdata)
+  rmse =sqrt(mean((pred_model-test_y)^2))
+  
+  # print your rmse for each loop
+  print(rmse)
+  # store each rmse in a list
+  rmse_list[i] = rmse
+}
+# calculate average rmse
+avg_rmse = mean(rmse_list)
+avg_rmse
+```

@@ -1,0 +1,63 @@
+---
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+```{r}
+library(glmnet)
+library(readxl)
+Store2_1 <- read_excel("Desktop/predictive analysis/Store2-1.xlsx")
+Store3_1 <- read_excel("Desktop/predictive analysis/Store3-1.xlsx")
+Store4_1 <- read_excel("Desktop/predictive analysis/Store4-1.xlsx")
+Store5_1 <- read_excel("Desktop/predictive analysis/Store5-1.xlsx")
+Store6_1 <- read_excel("Desktop/predictive analysis/Store6-1.xlsx")
+Store7_1 <- read_excel("Desktop/predictive analysis/Store7-1.xlsx")
+Store8_1 <- read_excel("Desktop/predictive analysis/Store8-1.xlsx")
+Store9_1 <- read_excel("Desktop/predictive analysis/Store9-1.xlsx")
+```
+
+```{r}
+set.seed(1)
+train_c=Store2_1[Store2_1$Random=='Train',]
+test_c=Store2_1[Store2_1$Random=='Test',]
+```
+
+```{r}
+library(leaps)
+regfit.best=regsubsets(Y1~F1+D1+P1+PR1,train_c,nvmax = 4)
+best_test=model.matrix(Y1~F1+D1+P1+PR1,test_c)
+best_error=rep(NA,4)
+for (i in 1:4){
+  coefi=coef(regfit.best,id=i)
+  pred=best_test[,names(coefi)]%*%coefi
+  best_error[i]=sqrt(mean((test_c$Y1-pred)^2))
+}
+best_error
+#RMSE=651.7209
+which.min(best_error)
+coef(regfit.best,4)
+```
+
+```{r}
+x=model.matrix(Y1~F1+D1+P1+PR1,Store2_1)
+y=Store2_1$Y1
+train=seq(1:dim(train_c)[1])
+y_test=y[-train]
+
+ridge.mod=glmnet(x[train,],y[train],alpha = 0,lambda = 10^-4)
+cv.out_r=cv.glmnet(x[train,],y[train],alpha=0)
+plot(cv.out_r)
+bestlam_r=cv.out_r$lambda.min
+ridge.pred=predict(ridge.mod,s=bestlam_r,x[-test,])
+RMSE_r=sqrt(mean((ridge.pred-y_test)^2))
+#651.7246
+
+set.seed(1)
+lasso.mod=glmnet(x[train,],y[train],alpha = 1,lambda = 10^-5)
+plot(lasso.mod)
+cv.out_l=cv.glmnet(x[train,],y[train],alpha=1)
+bestlam_l=cv.out_l$lambda.min
+lasso.pred=predict(lasso.mod,s=bestlam_l,newx = x[-train,])
+RMSE_l=sqrt(mean((lasso.pred-y_test)^2))
+#651.7246
+```
