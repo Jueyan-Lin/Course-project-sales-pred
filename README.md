@@ -1,2 +1,2 @@
-# Course-project-sales-pred
-Course project for sales prediction
+# Course project for sales prediction
+This is the sales prediction for a course project. We generated the prediction results mainly focus on regression methods in this project.
